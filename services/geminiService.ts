@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
-import { TranslationStyle, ViralIdea } from "../types.ts";
+import { TranslationStyle, ViralIdea } from "../types";
 
 const getApiKey = () => {
   try {
