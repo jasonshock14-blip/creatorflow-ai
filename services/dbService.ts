@@ -14,19 +14,45 @@ const decodePass = (p: string) => {
   try { return atob(p); } catch { return p; }
 };
 
+/**
+ * MANUAL USER CONFIGURATION SECTION
+ * Add your specific usernames, passwords, and device IDs here.
+ * These will be automatically injected into the system on first run.
+ */
+const HARDCODED_USERS: UserRecord[] = [
+  {
+    username: 'admin',
+    password: '0000', // Will be encoded automatically
+    boundDeviceId: null, // Admin usually unbound for flexibility
+    createdAt: Date.now()
+  },
+  {
+    username: 'jason_pro', // REPLACE WITH YOUR USERNAME
+    password: 'password123', // REPLACE WITH YOUR PASSWORD
+    boundDeviceId: 'HWID-A1B2C3D4', // REPLACE WITH YOUR DEVICE ID
+    createdAt: Date.now()
+  },
+  {
+    username: 'mobile_user',
+    password: '9999',
+    boundDeviceId: 'HWID-PHONEXYZ',
+    createdAt: Date.now()
+  }
+];
+
 export const getDB = (): UserRecord[] => {
   const data = localStorage.getItem(DB_KEY);
+  
   if (!data) {
-    const defaultAdmin: UserRecord = {
-      username: 'admin',
-      password: encodePass('0000'),
-      boundDeviceId: null,
-      createdAt: Date.now()
-    };
-    const initialDB = [defaultAdmin];
+    // If DB is empty, initialize with hardcoded users
+    const initialDB = HARDCODED_USERS.map(u => ({
+      ...u,
+      password: encodePass(u.password)
+    }));
     localStorage.setItem(DB_KEY, JSON.stringify(initialDB));
-    return initialDB;
+    return HARDCODED_USERS;
   }
+
   try {
     const users: UserRecord[] = JSON.parse(data);
     return users.map(u => ({ ...u, password: decodePass(u.password) }));
@@ -58,7 +84,6 @@ export const addUser = (user: UserRecord): UserRecord[] | null => {
 
 export const deleteUser = (username: string): UserRecord[] => {
   const normalizedTarget = username.trim().toLowerCase();
-  // Protected account
   if (normalizedTarget === 'admin') {
     throw new Error("The master 'admin' account cannot be deleted.");
   }
