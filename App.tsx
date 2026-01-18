@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { AppTab } from './types';
 import TranscribePanel from './components/TranscribePanel';
@@ -15,15 +14,17 @@ const App: React.FC = () => {
   const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
+    console.log("App: Initializing session...");
     try {
       const currentSession = getActiveSession();
       if (currentSession) {
         setSession(currentSession);
       }
     } catch (e) {
-      console.error("Session initialization error:", e);
+      console.error("App: Session initialization error:", e);
     } finally {
-      setInitializing(false);
+      // Small delay to ensure smooth transition from loading to app/login
+      setTimeout(() => setInitializing(false), 500);
     }
   }, []);
 
@@ -36,7 +37,10 @@ const App: React.FC = () => {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-500 gap-4">
         <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-        <span className="text-xs font-bold uppercase tracking-widest">Initializing Creative Studio...</span>
+        <div className="flex flex-col items-center gap-1">
+          <span className="text-xs font-bold uppercase tracking-widest text-indigo-400">CreatorFlow AI</span>
+          <span className="text-[10px] uppercase tracking-[0.2em] opacity-50">Authenticating Hardware...</span>
+        </div>
       </div>
     );
   }
@@ -113,7 +117,10 @@ const App: React.FC = () => {
               <span>User: <span className="text-indigo-400">{session.username}</span></span>
               {isAdmin && <span className="bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/30">Admin Mode</span>}
             </div>
-            <span>Device ID Verified</span>
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>{session.deviceId} Verified</span>
+            </div>
           </div>
           {activeTab === AppTab.TRANSCRIBE && <TranscribePanel />}
           {activeTab === AppTab.TRANSLATE && <TranslatePanel />}
