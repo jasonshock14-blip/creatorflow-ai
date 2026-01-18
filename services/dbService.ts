@@ -25,27 +25,26 @@ const HARDCODED_USERS: UserRecord[] = [
   {
     username: 'admin',
     password: '0000',
-    boundDeviceIds: [], // Empty means any device can log in (or first one binds)
+    boundDeviceIds: [], // Empty means first login auto-binds
     createdAt: Date.now()
   },
   {
     username: 'jason_pro',
     password: 'password123',
-    // MANUALLY ADD MULTIPLE DEVICE IDS HERE:
+    // ADD YOUR MANUAL DEVICE IDs HERE:
     boundDeviceIds: [
       'HWID-A1B2C3D4', 
       'HWID-PHONEXYZ', 
-      'HWID-TABLET123',
-      'HWID-DESKTOP-77' 
+      'HWID-TABLET123'
     ], 
     createdAt: Date.now()
   },
   {
-    username: 'htetaung',
-    password: '2005',
+    username: 'creator_team',
+    password: 'secure-token-2025',
     boundDeviceIds: [
       'HWID-LAPTOP-01',
-      'HWID-635E1E26'
+      'HWID-LAPTOP-02'
     ],
     createdAt: Date.now()
   }
@@ -68,16 +67,14 @@ export const getDB = (): UserRecord[] => {
   }
 
   // Merge logic: Hardcoded users from code are merged with stored users.
-  // This ensures that if you add a device in code, it shows up in the app.
   const merged = [...storedUsers];
   
   HARDCODED_USERS.forEach(hUser => {
     const existingIdx = merged.findIndex(u => u.username.toLowerCase() === hUser.username.toLowerCase());
     if (existingIdx === -1) {
-      // Add new user from code
       merged.push(hUser);
     } else {
-      // Sync hardcoded devices with stored ones (prevent duplicates)
+      // Sync hardcoded devices with stored ones and ensure uniqueness
       const combinedDevices = Array.from(new Set([
         ...merged[existingIdx].boundDeviceIds, 
         ...hUser.boundDeviceIds
@@ -85,7 +82,7 @@ export const getDB = (): UserRecord[] => {
       
       merged[existingIdx] = { 
         ...merged[existingIdx],
-        password: hUser.password, // Update password if it changed in code
+        password: hUser.password,
         boundDeviceIds: combinedDevices
       };
     }
