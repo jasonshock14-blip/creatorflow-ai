@@ -1,6 +1,6 @@
 
-import { getDeviceId } from './deviceService.ts';
-import { findUser, updateDeviceBinding, UserRecord } from './dbService.ts';
+import { getDeviceId } from './deviceService';
+import { findUser, updateDeviceBinding, UserRecord } from './dbService';
 
 export interface AuthSession {
   username: string;
@@ -20,7 +20,8 @@ export const loginUser = (username: string, pass: string): { success: boolean; m
   }
 
   // Multi-Device Check
-  if (user.boundDeviceIds && user.boundDeviceIds.length > 0 && !user.boundDeviceIds.includes(currentDevice)) {
+  const authorizedDevices = user.boundDeviceIds || [];
+  if (authorizedDevices.length > 0 && !authorizedDevices.includes(currentDevice)) {
     return { 
       success: false, 
       message: `Security Alert: This device (${currentDevice}) is not authorized for this account.` 
@@ -28,7 +29,7 @@ export const loginUser = (username: string, pass: string): { success: boolean; m
   }
 
   // Auto-bind if list is empty
-  if (!user.boundDeviceIds || user.boundDeviceIds.length === 0) {
+  if (authorizedDevices.length === 0) {
     updateDeviceBinding(user.username, [currentDevice]);
   }
 
