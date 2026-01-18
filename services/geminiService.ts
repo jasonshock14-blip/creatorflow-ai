@@ -6,12 +6,22 @@ import { TranslationStyle, ViralIdea } from "../types";
  * Validates the API key and returns a configured AI instance.
  */
 const getAI = () => {
-  // Try to find the key in common process.env locations injected by Vite
+  // Check common process.env locations. 
+  // Vite will replace these literals during the build process.
   const key = process.env.API_KEY || process.env.GEMINI_API_KEY;
   
-  if (!key || key === 'undefined' || key === 'PLACEHOLDER_API_KEY' || key.length < 10) {
-    throw new Error("API key is missing. Ensure GEMINI_API_KEY is set in GitHub Secrets or .env.local.");
+  const isInvalid = !key || 
+                    key === 'undefined' || 
+                    key === 'null' || 
+                    key === 'PLACEHOLDER_API_KEY' || 
+                    key.trim().length < 5;
+
+  if (isInvalid) {
+    throw new Error(
+      "API Key Missing. If you just added the GEMINI_API_KEY secret to GitHub, you MUST push a new commit or manually re-run the 'Deploy to GitHub Pages' action for the changes to take effect."
+    );
   }
+  
   return new GoogleGenAI({ apiKey: key });
 };
 
@@ -116,7 +126,6 @@ export const generateImage = async (prompt: string): Promise<string> => {
     contents: { parts: [{ text: prompt }] },
   });
   
-  // Strict check for candidates and parts to satisfy TS and avoid runtime crashes
   const candidate = response.candidates && response.candidates[0];
   const parts = candidate?.content?.parts;
   
