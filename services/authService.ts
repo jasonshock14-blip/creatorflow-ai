@@ -15,7 +15,7 @@ const AUTHORIZED_USERS: User[] = [
   {
     username: "admin",
     passwordHash: "0000",
-    deviceIds: ["1D94-B37F-ID"] // Replace with your real ID from the login screen
+    deviceIds: ["1D94-B37F-ID", "4A4C-7960-ID"] // Replace with your real ID from the login screen
   },
   {
     username: "user1",
