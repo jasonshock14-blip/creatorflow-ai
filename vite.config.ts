@@ -5,10 +5,11 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
     // Load env file based on `mode` in the current working directory.
-    // Set the third parameter to '' to load all envs regardless of the `VITE_` prefix.
+    // Use '' prefix to load all environment variables.
     const env = loadEnv(mode, process.cwd(), '');
     
-    const apiKey = env.GEMINI_API_KEY || process.env.GEMINI_API_KEY || "";
+    // Prioritize system environment variables (CI/GitHub Actions) over local .env files
+    const apiKey = process.env.GEMINI_API_KEY || env.GEMINI_API_KEY || env.VITE_GEMINI_API_KEY || "";
 
     return {
       base: './',
@@ -18,8 +19,15 @@ export default defineConfig(({ mode }) => {
       },
       plugins: [react()],
       define: {
+        // This ensures code using process.env.API_KEY gets the actual value
         'process.env.API_KEY': JSON.stringify(apiKey),
-        'process.env.GEMINI_API_KEY': JSON.stringify(apiKey)
+        'process.env.GEMINI_API_KEY': JSON.stringify(apiKey),
+        // Polyfill process.env for broader compatibility
+        'process.env': JSON.stringify({ 
+          API_KEY: apiKey, 
+          GEMINI_API_KEY: apiKey,
+          NODE_ENV: mode 
+        })
       },
       resolve: {
         alias: {
@@ -29,6 +37,7 @@ export default defineConfig(({ mode }) => {
       build: {
         outDir: 'dist',
         assetsDir: 'assets',
+        sourcemap: false,
       }
     };
 });
