@@ -1,13 +1,25 @@
 
-import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import { TranslationStyle, ViralIdea } from "../types";
+
+/**
+ * Validates the API key and returns a configured AI instance.
+ * Throws a user-friendly error if the key is missing or invalid.
+ */
+const getAI = () => {
+  const key = process.env.API_KEY;
+  if (!key || key === 'undefined' || key === 'PLACEHOLDER_API_KEY' || key.length < 10) {
+    throw new Error("API key is missing or invalid. Please ensure GEMINI_API_KEY is set in your GitHub Secrets or .env.local file.");
+  }
+  return new GoogleGenAI({ apiKey: key });
+};
 
 export const transcribeOnly = async (
   fileData: string,
   mimeType: string,
   asSrt: boolean = false
 ): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = getAI();
   const prompt = asSrt 
     ? "Provide an extremely accurate, professional, word-for-word transcript of this media in SRT format including timestamps."
     : "Provide an extremely accurate, professional, word-for-word transcript of this media. Do not summarize or translate.";
@@ -15,7 +27,7 @@ export const transcribeOnly = async (
     model: 'gemini-3-flash-preview',
     contents: { parts: [{ inlineData: { mimeType, data: fileData } }, { text: prompt }] },
   });
-  return response?.text || "No response generated.";
+  return response.text || "No response generated.";
 };
 
 const STORYTELLER_RULES = `Rewrite the content as an EXHAUSTIVE, LONG-FORM cinematic retelling. NO SUMMARIZATION. Retell every beat in detail.`;
@@ -26,7 +38,7 @@ export const translateMedia = async (
   targetLanguage: string,
   style: TranslationStyle
 ): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = getAI();
   const stylePrompt = {
     [TranslationStyle.PURE]: `Translate into ${targetLanguage} accurately and completely. Do not summarize.`,
     [TranslationStyle.DEEP_INSIGHTS]: `Analyze subtext and lessons in ${targetLanguage}.`,
@@ -39,11 +51,11 @@ export const translateMedia = async (
     model: 'gemini-3-pro-preview',
     contents: { parts: [{ inlineData: { mimeType, data: fileData } }, { text: stylePrompt || "" }] },
   });
-  return response?.text || "";
+  return response.text || "";
 };
 
 export const translateText = async (text: string, targetLanguage: string, style: TranslationStyle): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = getAI();
   const stylePrompt = {
     [TranslationStyle.PURE]: `Translate into ${targetLanguage} completely.`,
     [TranslationStyle.DEEP_INSIGHTS]: `Analyze subtext in ${targetLanguage}.`,
@@ -56,11 +68,11 @@ export const translateText = async (text: string, targetLanguage: string, style:
     model: 'gemini-3-pro-preview',
     contents: `${stylePrompt}\n\nTEXT:\n${text}`,
   });
-  return response?.text || "";
+  return response.text || "";
 };
 
 export const generateViralBundle = async (topic: string, targetLanguage: string): Promise<ViralIdea[]> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = getAI();
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: `Generate 5 comprehensive long-form content strategies for: "${topic}" in ${targetLanguage}.`,
@@ -84,18 +96,21 @@ export const generateViralBundle = async (topic: string, targetLanguage: string)
       }
     }
   });
-  return response?.text ? JSON.parse(response.text) : [];
+  const text = response.text;
+  return text ? JSON.parse(text) : [];
 };
 
 export const generateImage = async (prompt: string): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = getAI();
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash-image',
     contents: { parts: [{ text: prompt }] },
   });
-  // Added safe array access and existence check for parts.find
-  const parts = response?.candidates?.[0]?.content?.parts;
-  const part = parts?.find(p => !!p.inlineData);
+  
+  const candidate = response.candidates?.[0];
+  if (!candidate || !candidate.content || !candidate.content.parts) return "";
+  
+  const part = candidate.content.parts.find(p => !!p.inlineData);
   return part?.inlineData?.data ? `data:image/png;base64,${part.inlineData.data}` : "";
 };
 
@@ -110,7 +125,7 @@ export const translateSRT = async (
   const chunks: string[][] = [];
   for (let i = 0; i < blocks.length; i += CHUNK_SIZE) chunks.push(blocks.slice(i, i + CHUNK_SIZE));
 
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = getAI();
   let finalResult = "";
 
   for (let i = 0; i < chunks.length; i++) {
@@ -122,7 +137,7 @@ export const translateSRT = async (
       contents: { parts: [{ text: prompt }] },
       config: { temperature: 0 },
     });
-    finalResult += (finalResult ? "\n\n" : "") + (response?.text || "").trim();
+    finalResult += (finalResult ? "\n\n" : "") + (response.text || "").trim();
   }
   return finalResult;
 };
