@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { getDB, addUser, deleteUser, updateDeviceBinding, updatePassword, UserRecord, saveDB } from '../services/dbService.ts';
+import { getDB, addUser, deleteUser, updateDeviceBinding, updatePassword, UserRecord, saveDB } from '../services/dbService';
 
 const AdminPanel: React.FC = () => {
   const [users, setUsers] = useState<UserRecord[]>([]);
