@@ -1,0 +1,7 @@
+{
+  "name": "CreatorFlow AI",
+  "description": "A high-performance toolkit for content creators to transcribe media, translate SRT files, and generate viral hooks using Gemini AI.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
