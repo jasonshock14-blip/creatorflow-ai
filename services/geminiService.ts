@@ -93,7 +93,9 @@ export const generateImage = async (prompt: string): Promise<string> => {
     model: 'gemini-2.5-flash-image',
     contents: { parts: [{ text: prompt }] },
   });
-  const part = response?.candidates?.[0]?.content?.parts.find(p => p.inlineData);
+  // Added safe array access and existence check for parts.find
+  const parts = response?.candidates?.[0]?.content?.parts;
+  const part = parts?.find(p => !!p.inlineData);
   return part?.inlineData?.data ? `data:image/png;base64,${part.inlineData.data}` : "";
 };
 
@@ -102,6 +104,7 @@ export const translateSRT = async (
   lang: string, 
   onProgress?: (current: number, total: number) => void
 ): Promise<string> => {
+  if (!srt) return "";
   const blocks = srt.split(/\r?\n\r?\n/).filter(block => block.trim().length > 0);
   const CHUNK_SIZE = 40;
   const chunks: string[][] = [];
