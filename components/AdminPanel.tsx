@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { getDB, addUser, deleteUser, updateDeviceBinding, updatePassword, UserRecord } from '../services/dbService';
+import { getDB, addUser, deleteUser, updateDeviceBinding, updatePassword, UserRecord, saveDB } from '../services/dbService';
 
 const AdminPanel: React.FC = () => {
   const [users, setUsers] = useState<UserRecord[]>([]);
@@ -10,7 +10,10 @@ const AdminPanel: React.FC = () => {
   const [editPassValue, setEditPassValue] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [migrationString, setMigrationString] = useState('');
+  const [showMigration, setShowMigration] = useState(false);
 
+  // Helper to force UI refresh by fetching fresh data from storage
   const refreshData = () => {
     setUsers([...getDB()]);
   };
@@ -65,7 +68,7 @@ const AdminPanel: React.FC = () => {
   };
 
   const handleResetDevice = (username: string) => {
-    if (window.confirm(`Clear hardware binding for "${username}"?`)) {
+    if (window.confirm(`Clear hardware binding for "${username}"? This will allow them to login from a new machine.`)) {
       const updatedList = updateDeviceBinding(username, null);
       setUsers([...updatedList]);
       showSuccess(`Device lock released for ${username}.`);
@@ -84,12 +87,38 @@ const AdminPanel: React.FC = () => {
     showSuccess(`Access token updated.`);
   };
 
+  // Migration Logic
+  const handleExport = () => {
+    const data = JSON.stringify(getDB());
+    const encoded = btoa(unescape(encodeURIComponent(data)));
+    setMigrationString(encoded);
+    navigator.clipboard.writeText(encoded);
+    showSuccess("Database exported to clipboard!");
+  };
+
+  const handleImport = () => {
+    if (!migrationString.trim()) return;
+    try {
+      const decoded = decodeURIComponent(escape(atob(migrationString.trim())));
+      const parsed = JSON.parse(decoded);
+      if (Array.isArray(parsed)) {
+        saveDB(parsed);
+        refreshData();
+        setMigrationString('');
+        setShowMigration(false);
+        showSuccess("Database synced successfully!");
+      }
+    } catch (e) {
+      setError("Invalid migration string.");
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="max-w-2xl flex flex-col md:flex-row justify-between items-start gap-4">
         <div>
           <h2 className="text-3xl font-bold mb-2 text-indigo-400">Security Backend</h2>
-          <p className="text-slate-400">Manage digital fingerprints and access tokens for your studio.</p>
+          <p className="text-slate-400">Manage digital fingerprints and access tokens for your studio seats.</p>
         </div>
         {successMsg && (
           <div className="bg-emerald-500/10 border border-emerald-500/30 px-4 py-2 rounded-lg text-emerald-400 text-xs font-bold animate-in fade-in slide-in-from-top-2">
@@ -99,7 +128,7 @@ const AdminPanel: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 space-y-6">
           <div className="glass p-6 rounded-2xl space-y-4 shadow-xl border border-white/5">
             <h3 className="text-sm font-bold uppercase tracking-widest text-slate-300 flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
@@ -135,6 +164,45 @@ const AdminPanel: React.FC = () => {
               </button>
             </form>
           </div>
+
+          <div className="glass p-6 rounded-2xl space-y-4 border border-white/5">
+             <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">System Migration</h3>
+                <button 
+                  onClick={() => setShowMigration(!showMigration)}
+                  className="text-[10px] text-indigo-400 hover:underline"
+                >
+                  {showMigration ? 'Hide' : 'Show Sync Tools'}
+                </button>
+             </div>
+             
+             {showMigration && (
+               <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                  <p className="text-[10px] text-slate-500 italic">Use this to move your accounts to another device (e.g. PC to Phone).</p>
+                  <button 
+                    onClick={handleExport}
+                    className="w-full bg-slate-800 hover:bg-slate-700 py-2 rounded-lg text-xs font-bold text-slate-300 border border-slate-700 transition-all"
+                  >
+                    Export Database String
+                  </button>
+                  <div className="relative">
+                    <textarea 
+                      value={migrationString}
+                      onChange={(e) => setMigrationString(e.target.value)}
+                      placeholder="Paste migration string here..."
+                      className="w-full h-20 bg-slate-950 border border-slate-800 rounded-lg p-2 text-[10px] font-mono text-indigo-300 outline-none focus:border-indigo-500"
+                    />
+                    <button 
+                      onClick={handleImport}
+                      disabled={!migrationString}
+                      className="mt-2 w-full bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-400 py-2 rounded-lg text-xs font-bold border border-indigo-500/30 disabled:opacity-30"
+                    >
+                      Import & Merge
+                    </button>
+                  </div>
+               </div>
+             )}
+          </div>
         </div>
 
         <div className="lg:col-span-2">
@@ -155,7 +223,7 @@ const AdminPanel: React.FC = () => {
                       <td className="px-6 py-4">
                         <span className="font-bold text-indigo-300">{user.username}</span>
                         {user.username.toLowerCase() === 'admin' && (
-                          <span className="ml-2 text-[8px] bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded uppercase font-black">Protected</span>
+                          <span className="ml-2 text-[8px] bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded uppercase font-black">System</span>
                         )}
                       </td>
                       <td className="px-6 py-4">
@@ -186,19 +254,19 @@ const AdminPanel: React.FC = () => {
                           <div className="flex flex-col">
                             <div className="flex items-center gap-1.5">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
-                              <span className="text-[9px] text-emerald-400 font-black uppercase tracking-widest">Locked</span>
+                              <span className="text-[9px] text-emerald-400 font-black uppercase tracking-widest">Linked</span>
                             </div>
                             <code className="text-[9px] text-slate-600 truncate max-w-[90px] mt-1 opacity-60 font-mono">{user.boundDeviceId}</code>
                           </div>
                         ) : (
-                          <span className="text-[9px] text-slate-700 uppercase font-bold tracking-widest">Available</span>
+                          <span className="text-[9px] text-slate-700 uppercase font-bold tracking-widest">Unbound</span>
                         )}
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-3">
                           {user.boundDeviceId && (
                             <button onClick={() => handleResetDevice(user.username)} className="text-[10px] text-indigo-400 hover:text-indigo-300 font-bold uppercase transition-colors px-2 py-1 rounded hover:bg-indigo-500/10">
-                              Unbind
+                              Reset HWID
                             </button>
                           )}
                           {user.username.toLowerCase() !== 'admin' && (
@@ -218,7 +286,7 @@ const AdminPanel: React.FC = () => {
             <svg className="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <p className="text-[10px] text-slate-500 font-medium italic">Passwords are encoded in LocalStorage for basic privacy.</p>
+            <p className="text-[10px] text-slate-500 font-medium italic">Deleting a user removes their seat license instantly.</p>
           </div>
         </div>
       </div>
