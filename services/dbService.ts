@@ -33,9 +33,12 @@ const HARDCODED_USERS: UserRecord[] = [
     createdAt: Date.now()
   },
   {
-    username: 'mobile_user',
-    password: '9999',
-    boundDeviceId: 'HWID-PHONEXYZ',
+    username: 'htetaung',
+    password: '2005',
+    boundDeviceId: [
+      'HWID-PHONEXYZ',
+      'HWID-635E1E26'
+      ],
     createdAt: Date.now()
   }
 ];
