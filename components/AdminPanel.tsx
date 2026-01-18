@@ -6,6 +6,7 @@ const AdminPanel: React.FC = () => {
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [newDeviceId, setNewDeviceId] = useState('');
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const [editPassValue, setEditPassValue] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +41,7 @@ const AdminPanel: React.FC = () => {
     const updatedList = addUser({
       username: cleanUsername,
       password: newPassword || '1234',
-      boundDeviceId: null,
+      boundDeviceId: newDeviceId.trim() || null,
       createdAt: Date.now()
     });
 
@@ -48,6 +49,7 @@ const AdminPanel: React.FC = () => {
       setUsers([...updatedList]);
       setNewUsername('');
       setNewPassword('');
+      setNewDeviceId('');
       showSuccess(`Account "${cleanUsername}" created.`);
     } else {
       setError('This username is already taken.');
@@ -146,7 +148,7 @@ const AdminPanel: React.FC = () => {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Access Token</label>
+                <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Access Token (Password)</label>
                 <input
                   type="text"
                   value={newPassword}
@@ -154,6 +156,17 @@ const AdminPanel: React.FC = () => {
                   placeholder="Password"
                   className="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 transition-colors text-white"
                 />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Manual Device ID (Optional)</label>
+                <input
+                  type="text"
+                  value={newDeviceId}
+                  onChange={(e) => setNewDeviceId(e.target.value)}
+                  placeholder="HWID-XXXXX"
+                  className="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 transition-colors text-white font-mono"
+                />
+                <p className="text-[9px] text-slate-600 mt-1 italic ml-1">Leave empty to auto-bind on first login.</p>
               </div>
               {error && <p className="text-xs text-red-400 font-medium animate-in shake duration-300">{error}</p>}
               <button
