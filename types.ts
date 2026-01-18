@@ -4,7 +4,7 @@ export enum AppTab {
   TRANSLATE = 'translate',
   SRT_TRANSLATOR = 'srt_translator',
   HOOKS = 'hooks',
-  ADMIN = 'admin'
+  ACCOUNT = 'account'
 }
 
 export enum TranslationStyle {
@@ -25,8 +25,13 @@ export interface ViralIdea {
   thumbnailText: string;
 }
 
-export interface SRTBlock {
-  id: string;
-  timestamp: string;
-  text: string;
+export interface User {
+  username: string;
+  passwordHash: string;
+  deviceIds: string[];
+}
+
+export interface AuthSession {
+  username: string;
+  deviceId: string;
 }
