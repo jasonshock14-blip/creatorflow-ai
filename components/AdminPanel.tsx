@@ -14,7 +14,6 @@ const AdminPanel: React.FC = () => {
   const [migrationString, setMigrationString] = useState('');
   const [showMigration, setShowMigration] = useState(false);
 
-  // Helper to force UI refresh by fetching fresh data from storage
   const refreshData = () => {
     setUsers([...getDB()]);
   };
@@ -38,10 +37,12 @@ const AdminPanel: React.FC = () => {
       return;
     }
 
+    const deviceIdArray = newDeviceId.trim() ? [newDeviceId.trim()] : [];
+
     const updatedList = addUser({
       username: cleanUsername,
       password: newPassword || '1234',
-      boundDeviceId: newDeviceId.trim() || null,
+      boundDeviceIds: deviceIdArray,
       createdAt: Date.now()
     });
 
@@ -70,10 +71,10 @@ const AdminPanel: React.FC = () => {
   };
 
   const handleResetDevice = (username: string) => {
-    if (window.confirm(`Clear hardware binding for "${username}"? This will allow them to login from a new machine.`)) {
-      const updatedList = updateDeviceBinding(username, null);
+    if (window.confirm(`Clear ALL hardware bindings for "${username}"? This will allow them to login from any new machine.`)) {
+      const updatedList = updateDeviceBinding(username, []);
       setUsers([...updatedList]);
-      showSuccess(`Device lock released for ${username}.`);
+      showSuccess(`All device locks released for ${username}.`);
     }
   };
 
@@ -89,7 +90,6 @@ const AdminPanel: React.FC = () => {
     showSuccess(`Access token updated.`);
   };
 
-  // Migration Logic
   const handleExport = () => {
     const data = JSON.stringify(getDB());
     const encoded = btoa(unescape(encodeURIComponent(data)));
@@ -120,7 +120,7 @@ const AdminPanel: React.FC = () => {
       <div className="max-w-2xl flex flex-col md:flex-row justify-between items-start gap-4">
         <div>
           <h2 className="text-3xl font-bold mb-2 text-indigo-400">Security Backend</h2>
-          <p className="text-slate-400">Manage digital fingerprints and access tokens for your studio seats.</p>
+          <p className="text-slate-400">Manage multi-device access and tokens for your creative seats.</p>
         </div>
         {successMsg && (
           <div className="bg-emerald-500/10 border border-emerald-500/30 px-4 py-2 rounded-lg text-emerald-400 text-xs font-bold animate-in fade-in slide-in-from-top-2">
@@ -148,7 +148,7 @@ const AdminPanel: React.FC = () => {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Access Token (Password)</label>
+                <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Access Token</label>
                 <input
                   type="text"
                   value={newPassword}
@@ -158,7 +158,7 @@ const AdminPanel: React.FC = () => {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Manual Device ID (Optional)</label>
+                <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Initial Device ID (Optional)</label>
                 <input
                   type="text"
                   value={newDeviceId}
@@ -166,7 +166,6 @@ const AdminPanel: React.FC = () => {
                   placeholder="HWID-XXXXX"
                   className="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 transition-colors text-white font-mono"
                 />
-                <p className="text-[9px] text-slate-600 mt-1 italic ml-1">Leave empty to auto-bind on first login.</p>
               </div>
               {error && <p className="text-xs text-red-400 font-medium animate-in shake duration-300">{error}</p>}
               <button
@@ -191,28 +190,18 @@ const AdminPanel: React.FC = () => {
              
              {showMigration && (
                <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
-                  <p className="text-[10px] text-slate-500 italic">Use this to move your accounts to another device (e.g. PC to Phone).</p>
-                  <button 
-                    onClick={handleExport}
-                    className="w-full bg-slate-800 hover:bg-slate-700 py-2 rounded-lg text-xs font-bold text-slate-300 border border-slate-700 transition-all"
-                  >
-                    Export Database String
+                  <button onClick={handleExport} className="w-full bg-slate-800 hover:bg-slate-700 py-2 rounded-lg text-xs font-bold text-slate-300 border border-slate-700 transition-all">
+                    Export DB
                   </button>
-                  <div className="relative">
-                    <textarea 
-                      value={migrationString}
-                      onChange={(e) => setMigrationString(e.target.value)}
-                      placeholder="Paste migration string here..."
-                      className="w-full h-20 bg-slate-950 border border-slate-800 rounded-lg p-2 text-[10px] font-mono text-indigo-300 outline-none focus:border-indigo-500"
-                    />
-                    <button 
-                      onClick={handleImport}
-                      disabled={!migrationString}
-                      className="mt-2 w-full bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-400 py-2 rounded-lg text-xs font-bold border border-indigo-500/30 disabled:opacity-30"
-                    >
-                      Import & Merge
-                    </button>
-                  </div>
+                  <textarea 
+                    value={migrationString}
+                    onChange={(e) => setMigrationString(e.target.value)}
+                    placeholder="Paste migration string..."
+                    className="w-full h-20 bg-slate-950 border border-slate-800 rounded-lg p-2 text-[10px] font-mono text-indigo-300 outline-none focus:border-indigo-500"
+                  />
+                  <button onClick={handleImport} disabled={!migrationString} className="w-full bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-400 py-2 rounded-lg text-xs font-bold border border-indigo-500/30">
+                    Import & Merge
+                  </button>
                </div>
              )}
           </div>
@@ -225,8 +214,8 @@ const AdminPanel: React.FC = () => {
                 <thead className="bg-slate-900/80 border-b border-slate-800 text-slate-500 uppercase text-[10px] tracking-wider">
                   <tr>
                     <th className="px-6 py-4 font-bold">Identity</th>
-                    <th className="px-6 py-4 font-bold">Password</th>
-                    <th className="px-6 py-4 font-bold">Hardware ID</th>
+                    <th className="px-6 py-4 font-bold">Access Token</th>
+                    <th className="px-6 py-4 font-bold">Authorized Devices</th>
                     <th className="px-6 py-4 font-bold text-right">Actions</th>
                   </tr>
                 </thead>
@@ -235,9 +224,6 @@ const AdminPanel: React.FC = () => {
                     <tr key={user.username} className="hover:bg-white/[0.03] transition-colors group">
                       <td className="px-6 py-4">
                         <span className="font-bold text-indigo-300">{user.username}</span>
-                        {user.username.toLowerCase() === 'admin' && (
-                          <span className="ml-2 text-[8px] bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded uppercase font-black">System</span>
-                        )}
                       </td>
                       <td className="px-6 py-4">
                         {editingUser === user.username ? (
@@ -263,27 +249,28 @@ const AdminPanel: React.FC = () => {
                         )}
                       </td>
                       <td className="px-6 py-4">
-                        {user.boundDeviceId ? (
-                          <div className="flex flex-col">
-                            <div className="flex items-center gap-1.5">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
-                              <span className="text-[9px] text-emerald-400 font-black uppercase tracking-widest">Linked</span>
-                            </div>
-                            <code className="text-[9px] text-slate-600 truncate max-w-[90px] mt-1 opacity-60 font-mono">{user.boundDeviceId}</code>
-                          </div>
-                        ) : (
-                          <span className="text-[9px] text-slate-700 uppercase font-bold tracking-widest">Unbound</span>
-                        )}
+                        <div className="flex flex-col gap-1">
+                          {user.boundDeviceIds.length > 0 ? (
+                            user.boundDeviceIds.map(id => (
+                              <div key={id} className="flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                <code className="text-[9px] text-slate-400 font-mono">{id}</code>
+                              </div>
+                            ))
+                          ) : (
+                            <span className="text-[10px] text-slate-600 italic">No devices bound</span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-3">
-                          {user.boundDeviceId && (
-                            <button onClick={() => handleResetDevice(user.username)} className="text-[10px] text-indigo-400 hover:text-indigo-300 font-bold uppercase transition-colors px-2 py-1 rounded hover:bg-indigo-500/10">
-                              Reset HWID
+                          {user.boundDeviceIds.length > 0 && (
+                            <button onClick={() => handleResetDevice(user.username)} className="text-[10px] text-indigo-400 hover:text-indigo-300 font-bold uppercase px-2 py-1 rounded hover:bg-indigo-500/10">
+                              Clear Devices
                             </button>
                           )}
                           {user.username.toLowerCase() !== 'admin' && (
-                            <button onClick={() => handleDelete(user.username)} className="text-[10px] text-red-500 hover:text-red-400 font-bold uppercase transition-colors px-2 py-1 rounded hover:bg-red-500/10">
+                            <button onClick={() => handleDelete(user.username)} className="text-[10px] text-red-500 hover:text-red-400 font-bold uppercase px-2 py-1 rounded hover:bg-red-500/10">
                               Delete
                             </button>
                           )}
@@ -294,12 +281,6 @@ const AdminPanel: React.FC = () => {
                 </tbody>
               </table>
             </div>
-          </div>
-          <div className="mt-4 flex items-center gap-2 px-2">
-            <svg className="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <p className="text-[10px] text-slate-500 font-medium italic">Deleting a user removes their seat license instantly.</p>
           </div>
         </div>
       </div>
