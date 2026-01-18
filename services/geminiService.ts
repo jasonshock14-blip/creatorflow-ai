@@ -4,12 +4,13 @@ import { TranslationStyle, ViralIdea } from "../types";
 
 /**
  * Validates the API key and returns a configured AI instance.
- * Throws a user-friendly error if the key is missing or invalid.
  */
 const getAI = () => {
-  const key = process.env.API_KEY;
+  // Try to find the key in common process.env locations injected by Vite
+  const key = process.env.API_KEY || process.env.GEMINI_API_KEY;
+  
   if (!key || key === 'undefined' || key === 'PLACEHOLDER_API_KEY' || key.length < 10) {
-    throw new Error("API key is missing or invalid. Please ensure GEMINI_API_KEY is set in your GitHub Secrets or .env.local file.");
+    throw new Error("API key is missing. Ensure GEMINI_API_KEY is set in GitHub Secrets or .env.local.");
   }
   return new GoogleGenAI({ apiKey: key });
 };
@@ -23,11 +24,13 @@ export const transcribeOnly = async (
   const prompt = asSrt 
     ? "Provide an extremely accurate, professional, word-for-word transcript of this media in SRT format including timestamps."
     : "Provide an extremely accurate, professional, word-for-word transcript of this media. Do not summarize or translate.";
+  
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: { parts: [{ inlineData: { mimeType, data: fileData } }, { text: prompt }] },
   });
-  return response.text || "No response generated.";
+  
+  return response.text || "No transcript generated.";
 };
 
 const STORYTELLER_RULES = `Rewrite the content as an EXHAUSTIVE, LONG-FORM cinematic retelling. NO SUMMARIZATION. Retell every beat in detail.`;
@@ -96,8 +99,14 @@ export const generateViralBundle = async (topic: string, targetLanguage: string)
       }
     }
   });
+  
   const text = response.text;
-  return text ? JSON.parse(text) : [];
+  try {
+    return text ? JSON.parse(text) : [];
+  } catch (e) {
+    console.error("Failed to parse viral bundle JSON", e);
+    return [];
+  }
 };
 
 export const generateImage = async (prompt: string): Promise<string> => {
@@ -107,10 +116,13 @@ export const generateImage = async (prompt: string): Promise<string> => {
     contents: { parts: [{ text: prompt }] },
   });
   
-  const candidate = response.candidates?.[0];
-  if (!candidate || !candidate.content || !candidate.content.parts) return "";
+  // Strict check for candidates and parts to satisfy TS and avoid runtime crashes
+  const candidate = response.candidates && response.candidates[0];
+  const parts = candidate?.content?.parts;
   
-  const part = candidate.content.parts.find(p => !!p.inlineData);
+  if (!parts) return "";
+  
+  const part = parts.find(p => !!p.inlineData);
   return part?.inlineData?.data ? `data:image/png;base64,${part.inlineData.data}` : "";
 };
 
@@ -132,12 +144,18 @@ export const translateSRT = async (
     if (onProgress) onProgress(i + 1, chunks.length);
     const chunkContent = chunks[i].join("\n\n");
     const prompt = `Translate this SRT subtitle segment into ${lang}. Keep timestamps identical. Return raw SRT only.\n\n${chunkContent}`;
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: { parts: [{ text: prompt }] },
-      config: { temperature: 0 },
-    });
-    finalResult += (finalResult ? "\n\n" : "") + (response.text || "").trim();
+    
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: { parts: [{ text: prompt }] },
+        config: { temperature: 0 },
+      });
+      finalResult += (finalResult ? "\n\n" : "") + (response.text || "").trim();
+    } catch (err: any) {
+      console.error(`Error translating segment ${i + 1}`, err);
+      throw new Error(`Failed at segment ${i + 1}: ${err.message || 'Unknown error'}`);
+    }
   }
   return finalResult;
 };
