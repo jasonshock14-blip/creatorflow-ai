@@ -10,31 +10,28 @@ export interface AuthSession {
 export const loginUser = (username: string, pass: string): { success: boolean; message: string; session?: AuthSession } => {
   const currentDevice = getDeviceId();
   
-  // 1. Check if user exists (case-insensitive)
   const user = findUser(username);
   if (!user) {
     return { success: false, message: 'Identity not found in database.' };
   }
 
-  // 2. Check password
   if (user.password !== pass) {
     return { success: false, message: 'Invalid access token.' };
   }
 
-  // 3. Check Device Binding
-  if (user.boundDeviceId && user.boundDeviceId !== currentDevice) {
+  // Multi-Device Check
+  if (user.boundDeviceIds.length > 0 && !user.boundDeviceIds.includes(currentDevice)) {
     return { 
       success: false, 
-      message: 'Security Alert: This account is locked to a different device.' 
+      message: `Security Alert: This device (${currentDevice}) is not authorized.` 
     };
   }
 
-  // 4. Bind device if first login
-  if (!user.boundDeviceId) {
-    updateDeviceBinding(user.username, currentDevice);
+  // Auto-bind if list is empty
+  if (user.boundDeviceIds.length === 0) {
+    updateDeviceBinding(user.username, [currentDevice]);
   }
 
-  // 5. Create session (Always use the canonical username from DB)
   const session = { username: user.username, deviceId: currentDevice };
   sessionStorage.setItem('cf_active_session', JSON.stringify(session));
 
