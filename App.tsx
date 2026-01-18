@@ -19,9 +19,11 @@ const App: React.FC = () => {
     setIsInitializing(false);
     
     // Check if API key is missing or placeholder
-    const key = process.env.API_KEY;
+    const key = process.env.API_KEY || process.env.GEMINI_API_KEY;
     if (!key || key === 'undefined' || key === 'PLACEHOLDER_API_KEY' || key.length < 10) {
       setIsKeyMissing(true);
+    } else {
+      setIsKeyMissing(false);
     }
   }, []);
 
@@ -53,12 +55,12 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50">
       {isKeyMissing && (
-        <div className="bg-amber-500 text-slate-950 px-4 py-2 text-center text-xs font-bold flex items-center justify-center gap-2">
+        <div className="bg-amber-500 text-slate-950 px-4 py-2 text-center text-xs font-bold flex items-center justify-center gap-2 sticky top-0 z-[100]">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
-          API KEY MISSING: Please set GEMINI_API_KEY in your GitHub Repository Secrets.
-          <a href="https://github.com/settings/secrets/actions" target="_blank" rel="noreferrer" className="underline ml-2">Open GitHub Settings</a>
+          API KEY WARNING: No valid Gemini API Key detected. Please check your GitHub Secrets.
+          <a href="https://github.com/settings/secrets/actions" target="_blank" rel="noreferrer" className="underline ml-2">Fix in GitHub</a>
         </div>
       )}
 
