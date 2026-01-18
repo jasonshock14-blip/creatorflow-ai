@@ -107,38 +107,35 @@ export const generateViralBundle = async (topic: string, targetLanguage: string)
 
 export const generateImage = async (prompt: string): Promise<string> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
-  const response = await ai.models.generateContent({
+  const response: GenerateContentResponse = await ai.models.generateContent({
     model: 'gemini-2.5-flash-image',
     contents: { parts: [{ text: prompt }] },
   });
   
-  const candidates = response.candidates;
-  if (!candidates || candidates.length === 0) return "";
+  if (!response || !response.candidates || response.candidates.length === 0) {
+    return "";
+  }
   
-  const parts = candidates[0].content?.parts;
-  if (!parts) return "";
+  const firstCandidate = response.candidates[0];
+  if (!firstCandidate || !firstCandidate.content || !firstCandidate.content.parts) {
+    return "";
+  }
 
-  const part = parts.find(p => p.inlineData);
+  const part = firstCandidate.content.parts.find(p => p.inlineData);
   return part?.inlineData?.data ? `data:image/png;base64,${part.inlineData.data}` : "";
 };
 
-/**
- * Splits an SRT string into an array of subtitle blocks.
- */
 const splitSRT = (srt: string): string[] => {
   return srt.split(/\r?\n\r?\n/).filter(block => block.trim().length > 0);
 };
 
-/**
- * Translates an SRT file by chunking it into smaller segments to avoid 500 errors and output limits.
- */
 export const translateSRT = async (
   srt: string, 
   lang: string, 
   onProgress?: (current: number, total: number) => void
 ): Promise<string> => {
   const blocks = splitSRT(srt);
-  const CHUNK_SIZE = 40; // Number of subtitle blocks per request
+  const CHUNK_SIZE = 40; 
   const chunks: string[][] = [];
 
   for (let i = 0; i < blocks.length; i += CHUNK_SIZE) {
