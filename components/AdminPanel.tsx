@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { getDB, addUser, deleteUser, updateDeviceBinding, updatePassword, UserRecord, saveDB } from '../services/dbService';
+import { getDB, addUser, deleteUser, updateDeviceBinding, updatePassword, UserRecord, saveDB } from '../services/dbService.ts';
 
 const AdminPanel: React.FC = () => {
   const [users, setUsers] = useState<UserRecord[]>([]);
@@ -176,35 +176,6 @@ const AdminPanel: React.FC = () => {
               </button>
             </form>
           </div>
-
-          <div className="glass p-6 rounded-2xl space-y-4 border border-white/5">
-             <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">System Migration</h3>
-                <button 
-                  onClick={() => setShowMigration(!showMigration)}
-                  className="text-[10px] text-indigo-400 hover:underline"
-                >
-                  {showMigration ? 'Hide' : 'Show Sync Tools'}
-                </button>
-             </div>
-             
-             {showMigration && (
-               <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
-                  <button onClick={handleExport} className="w-full bg-slate-800 hover:bg-slate-700 py-2 rounded-lg text-xs font-bold text-slate-300 border border-slate-700 transition-all">
-                    Export DB
-                  </button>
-                  <textarea 
-                    value={migrationString}
-                    onChange={(e) => setMigrationString(e.target.value)}
-                    placeholder="Paste migration string..."
-                    className="w-full h-20 bg-slate-950 border border-slate-800 rounded-lg p-2 text-[10px] font-mono text-indigo-300 outline-none focus:border-indigo-500"
-                  />
-                  <button onClick={handleImport} disabled={!migrationString} className="w-full bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-400 py-2 rounded-lg text-xs font-bold border border-indigo-500/30">
-                    Import & Merge
-                  </button>
-               </div>
-             )}
-          </div>
         </div>
 
         <div className="lg:col-span-2">
@@ -250,7 +221,7 @@ const AdminPanel: React.FC = () => {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-col gap-1">
-                          {user.boundDeviceIds.length > 0 ? (
+                          {user.boundDeviceIds && user.boundDeviceIds.length > 0 ? (
                             user.boundDeviceIds.map(id => (
                               <div key={id} className="flex items-center gap-2">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
@@ -264,11 +235,9 @@ const AdminPanel: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-3">
-                          {user.boundDeviceIds.length > 0 && (
-                            <button onClick={() => handleResetDevice(user.username)} className="text-[10px] text-indigo-400 hover:text-indigo-300 font-bold uppercase px-2 py-1 rounded hover:bg-indigo-500/10">
-                              Clear Devices
-                            </button>
-                          )}
+                          <button onClick={() => handleResetDevice(user.username)} className="text-[10px] text-indigo-400 hover:text-indigo-300 font-bold uppercase px-2 py-1 rounded hover:bg-indigo-500/10">
+                            Clear Devices
+                          </button>
                           {user.username.toLowerCase() !== 'admin' && (
                             <button onClick={() => handleDelete(user.username)} className="text-[10px] text-red-500 hover:text-red-400 font-bold uppercase px-2 py-1 rounded hover:bg-red-500/10">
                               Delete
