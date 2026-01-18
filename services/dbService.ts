@@ -2,66 +2,96 @@
 export interface UserRecord {
   username: string;
   password: string;
-  boundDeviceId: string | null;
+  boundDeviceIds: string[];
   createdAt: number;
 }
 
-const DB_KEY = 'cf_mock_db_users';
+const DB_KEY = 'cf_mock_db_users_v2';
 
-// Simple encoding helper to prevent plain-text visibility in LocalStorage
+// Simple encoding helper
 const encodePass = (p: string) => btoa(p);
 const decodePass = (p: string) => {
   try { return atob(p); } catch { return p; }
 };
 
 /**
- * MANUAL USER CONFIGURATION SECTION
- * Add your specific usernames, passwords, and device IDs here.
- * These will be automatically injected into the system on first run.
+ * ==========================================================
+ * MANUAL USER CONFIGURATION (CODING ENTRY)
+ * ==========================================================
+ * Add your usernames, passwords, and Device IDs here.
+ * You can list as many devices as you want for one user.
  */
 const HARDCODED_USERS: UserRecord[] = [
   {
     username: 'admin',
-    password: '0000', // Will be encoded automatically
-    boundDeviceId: null, // Admin usually unbound for flexibility
+    password: '0000',
+    boundDeviceIds: [], // Empty means any device can log in (or first one binds)
     createdAt: Date.now()
   },
   {
-    username: 'jason_pro', // REPLACE WITH YOUR USERNAME
-    password: 'password123', // REPLACE WITH YOUR PASSWORD
-    boundDeviceId: 'HWID-A1B2C3D4', // REPLACE WITH YOUR DEVICE ID
+    username: 'jason_pro',
+    password: 'password123',
+    // MANUALLY ADD MULTIPLE DEVICE IDS HERE:
+    boundDeviceIds: [
+      'HWID-A1B2C3D4', 
+      'HWID-PHONEXYZ', 
+      'HWID-TABLET123',
+      'HWID-DESKTOP-77' 
+    ], 
     createdAt: Date.now()
   },
   {
     username: 'htetaung',
     password: '2005',
-    boundDeviceId: [
-      'HWID-PHONEXYZ',
+    boundDeviceIds: [
+      'HWID-LAPTOP-01',
       'HWID-635E1E26'
-      ],
+    ],
     createdAt: Date.now()
   }
 ];
 
 export const getDB = (): UserRecord[] => {
   const data = localStorage.getItem(DB_KEY);
-  
-  if (!data) {
-    // If DB is empty, initialize with hardcoded users
-    const initialDB = HARDCODED_USERS.map(u => ({
-      ...u,
-      password: encodePass(u.password)
-    }));
-    localStorage.setItem(DB_KEY, JSON.stringify(initialDB));
-    return HARDCODED_USERS;
+  let storedUsers: UserRecord[] = [];
+
+  if (data) {
+    try {
+      const parsed = JSON.parse(data);
+      storedUsers = parsed.map((u: any) => ({ 
+        ...u, 
+        password: decodePass(u.password) 
+      }));
+    } catch (e) {
+      storedUsers = [];
+    }
   }
 
-  try {
-    const users: UserRecord[] = JSON.parse(data);
-    return users.map(u => ({ ...u, password: decodePass(u.password) }));
-  } catch (e) {
-    return [];
-  }
+  // Merge logic: Hardcoded users from code are merged with stored users.
+  // This ensures that if you add a device in code, it shows up in the app.
+  const merged = [...storedUsers];
+  
+  HARDCODED_USERS.forEach(hUser => {
+    const existingIdx = merged.findIndex(u => u.username.toLowerCase() === hUser.username.toLowerCase());
+    if (existingIdx === -1) {
+      // Add new user from code
+      merged.push(hUser);
+    } else {
+      // Sync hardcoded devices with stored ones (prevent duplicates)
+      const combinedDevices = Array.from(new Set([
+        ...merged[existingIdx].boundDeviceIds, 
+        ...hUser.boundDeviceIds
+      ]));
+      
+      merged[existingIdx] = { 
+        ...merged[existingIdx],
+        password: hUser.password, // Update password if it changed in code
+        boundDeviceIds: combinedDevices
+      };
+    }
+  });
+
+  return merged;
 };
 
 export const saveDB = (users: UserRecord[]): UserRecord[] => {
@@ -90,19 +120,18 @@ export const deleteUser = (username: string): UserRecord[] => {
   if (normalizedTarget === 'admin') {
     throw new Error("The master 'admin' account cannot be deleted.");
   }
-  
   const users = getDB();
   const filtered = users.filter(u => u.username.toLowerCase() !== normalizedTarget);
   return saveDB(filtered);
 };
 
-export const updateDeviceBinding = (username: string, deviceId: string | null): UserRecord[] => {
+export const updateDeviceBinding = (username: string, deviceIds: string[]): UserRecord[] => {
   const users = getDB();
   const normalizedTarget = username.trim().toLowerCase();
   const index = users.findIndex(u => u.username.toLowerCase() === normalizedTarget);
   if (index !== -1) {
     const updatedUsers = [...users];
-    updatedUsers[index] = { ...updatedUsers[index], boundDeviceId: deviceId };
+    updatedUsers[index] = { ...updatedUsers[index], boundDeviceIds: deviceIds };
     return saveDB(updatedUsers);
   }
   return users;
