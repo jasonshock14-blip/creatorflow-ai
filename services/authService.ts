@@ -7,19 +7,29 @@ const DEVICE_ID_KEY = 'creatorflow_device_identity';
 
 /**
  * ============================================================
- * STEP-BY-STEP: HOW TO ADD USERS & DEVICE IDS
+ * STEP-BY-STEP: HOW TO ADD USERS & AUTHORIZE DEVICES
  * ============================================================
- * 1. Run the app and go to the Login screen.
- * 2. Look at "Device Identity" and copy the ID (e.g., "7F2A-C91B-ID")
- * 3. Open this file: services/authService.ts
- * 4. Add your details to the AUTHORIZED_USERS array below.
  * 
- * Example entry:
- * {
- *   username: "my_user",
- *   passwordHash: "1234",
- *   deviceIds: ["7F2A-C91B-ID"]
- * }
+ * 1. GET YOUR DEVICE ID:
+ *    - Open your app in the browser.
+ *    - On the login page, find the "Device Identity" box.
+ *    - Click the Copy icon (it looks like "A1B2-C3D4-ID").
+ * 
+ * 2. EDIT THIS FILE:
+ *    - Open 'services/authService.ts' in your code editor.
+ * 
+ * 3. ADD A USER ENTRY:
+ *    - Look at the AUTHORIZED_USERS array below.
+ *    - Add a new block for yourself:
+ *      { 
+ *        username: "my_name", 
+ *        passwordHash: "my_password", 
+ *        deviceIds: ["PASTE-YOUR-COPIED-ID-HERE"] 
+ *      }
+ * 
+ * 4. UPLOAD TO GITHUB:
+ *    - Save this file and push it to your GitHub repository.
+ *    - Once the "Deploy" action finishes, you can log in!
  * ============================================================
  */
 const AUTHORIZED_USERS: User[] = [
@@ -32,6 +42,12 @@ const AUTHORIZED_USERS: User[] = [
     username: "creator_pro",
     passwordHash: "securePass2025",
     deviceIds: ["PASTE_YOUR_DEVICE_ID_HERE"]
+  },
+  // ADD YOUR NEW USER HERE:
+  {
+    username: "user1",
+    passwordHash: "1234",
+    deviceIds: ["7F2A-C91B-ID"] // Replace with your real Device ID
   }
 ];
 
