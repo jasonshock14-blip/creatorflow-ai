@@ -1,13 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { AppTab } from './types';
-import TranscribePanel from './components/TranscribePanel';
-import TranslatePanel from './components/TranslatePanel';
-import SRTTranslatorPanel from './components/SRTTranslatorPanel';
-import ViralHooksPanel from './components/ViralHooksPanel';
-import AdminPanel from './components/AdminPanel';
-import Login from './components/Login';
-import { getActiveSession, logoutUser, AuthSession } from './services/authService';
+import { AppTab } from './types.ts';
+import TranscribePanel from './components/TranscribePanel.tsx';
+import TranslatePanel from './components/TranslatePanel.tsx';
+import SRTTranslatorPanel from './components/SRTTranslatorPanel.tsx';
+import ViralHooksPanel from './components/ViralHooksPanel.tsx';
+import AdminPanel from './components/AdminPanel.tsx';
+import Login from './components/Login.tsx';
+import { getActiveSession, logoutUser, AuthSession } from './services/authService.ts';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AppTab>(AppTab.TRANSCRIBE);
@@ -15,12 +15,16 @@ const App: React.FC = () => {
   const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
-    // Check for existing session on load
-    const currentSession = getActiveSession();
-    if (currentSession) {
-      setSession(currentSession);
+    try {
+      const currentSession = getActiveSession();
+      if (currentSession) {
+        setSession(currentSession);
+      }
+    } catch (e) {
+      console.error("Session initialization error:", e);
+    } finally {
+      setInitializing(false);
     }
-    setInitializing(false);
   }, []);
 
   const handleLogout = () => {
@@ -29,7 +33,12 @@ const App: React.FC = () => {
   };
 
   if (initializing) {
-    return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-500">Initializing...</div>;
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-500 gap-4">
+        <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+        <span className="text-xs font-bold uppercase tracking-widest">Initializing Creative Studio...</span>
+      </div>
+    );
   }
 
   if (!session) {
@@ -69,7 +78,7 @@ const App: React.FC = () => {
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => setActiveTab(tab.id as AppTab)}
                   className={`flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-md text-xs md:text-sm font-medium transition-all ${
                     activeTab === tab.id
                       ? 'bg-indigo-600 text-white shadow-lg'
@@ -114,10 +123,8 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      <footer className="mt-20 border-t border-slate-900 py-12 px-6">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="text-slate-500 text-sm">© 2024 CreatorFlow AI Studio.</div>
-        </div>
+      <footer className="mt-20 border-t border-slate-900 py-12 px-6 text-center">
+        <div className="text-slate-500 text-sm italic">"Precision AI for the Next Generation of Creators."</div>
       </footer>
     </div>
   );
