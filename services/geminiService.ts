@@ -7,7 +7,7 @@ export const transcribeOnly = async (
   mimeType: string,
   asSrt: boolean = false
 ): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
   const prompt = asSrt 
     ? "Provide an extremely accurate, professional, word-for-word transcript of this media in SRT format including timestamps."
     : "Provide an extremely accurate, professional, word-for-word transcript of this media. Do not summarize or translate.";
@@ -34,7 +34,7 @@ export const translateMedia = async (
   targetLanguage: string,
   style: TranslationStyle
 ): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
   const stylePrompt = {
     [TranslationStyle.PURE]: `Translate into ${targetLanguage} accurately and completely. Do not summarize.`,
     [TranslationStyle.DEEP_INSIGHTS]: `Analyze subtext and lessons in ${targetLanguage}.`,
@@ -51,7 +51,7 @@ export const translateMedia = async (
 };
 
 export const translateText = async (text: string, targetLanguage: string, style: TranslationStyle): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
   const stylePrompt = {
     [TranslationStyle.PURE]: `Translate into ${targetLanguage} completely. Do not summarize.`,
     [TranslationStyle.DEEP_INSIGHTS]: `Analyze subtext in ${targetLanguage}.`,
@@ -68,7 +68,7 @@ export const translateText = async (text: string, targetLanguage: string, style:
 };
 
 export const generateViralBundle = async (topic: string, targetLanguage: string): Promise<ViralIdea[]> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: `Generate 5 comprehensive long-form content strategies for: "${topic}" in ${targetLanguage}. 
@@ -101,16 +101,24 @@ export const generateViralBundle = async (topic: string, targetLanguage: string)
       }
     }
   });
-  return response.text ? JSON.parse(response.text) : [];
+  const text = response.text;
+  return text ? JSON.parse(text) : [];
 };
 
 export const generateImage = async (prompt: string): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash-image',
     contents: { parts: [{ text: prompt }] },
   });
-  const part = response.candidates?.[0]?.content?.parts.find(p => p.inlineData);
+  
+  const candidates = response.candidates;
+  if (!candidates || candidates.length === 0) return "";
+  
+  const parts = candidates[0].content?.parts;
+  if (!parts) return "";
+
+  const part = parts.find(p => p.inlineData);
   return part?.inlineData?.data ? `data:image/png;base64,${part.inlineData.data}` : "";
 };
 
@@ -137,7 +145,7 @@ export const translateSRT = async (
     chunks.push(blocks.slice(i, i + CHUNK_SIZE));
   }
 
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
   let finalResult = "";
 
   const properNounInstruction = lang.toLowerCase() === 'burmese' 
