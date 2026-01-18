@@ -1,13 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { AppTab } from './types.ts';
-import TranscribePanel from './components/TranscribePanel.tsx';
-import TranslatePanel from './components/TranslatePanel.tsx';
-import SRTTranslatorPanel from './components/SRTTranslatorPanel.tsx';
-import ViralHooksPanel from './components/ViralHooksPanel.tsx';
-import AdminPanel from './components/AdminPanel.tsx';
-import Login from './components/Login.tsx';
-import { getActiveSession, logoutUser, AuthSession } from './services/authService.ts';
+import { AppTab } from './types';
+import TranscribePanel from './components/TranscribePanel';
+import TranslatePanel from './components/TranslatePanel';
+import SRTTranslatorPanel from './components/SRTTranslatorPanel';
+import ViralHooksPanel from './components/ViralHooksPanel';
+import AdminPanel from './components/AdminPanel';
+import Login from './components/Login';
+import { getActiveSession, logoutUser, AuthSession } from './services/authService';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AppTab>(AppTab.TRANSCRIBE);
